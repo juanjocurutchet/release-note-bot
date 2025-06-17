@@ -1,25 +1,44 @@
-import { getCurrentSprintIssues, JiraIssue } from "../services/jiraService";
-import { generateTextWithAI } from "../services/aiService";
+import { getSprintIssues, JiraIssue } from "../services/jiraService";
+import fs from "fs";
+import path from "path";
 import { createReleaseNoteDocx } from "../services/docService";
 import { sendReleaseNoteEmail } from "../services/emailService";
 import { jiraAccounts } from "../config/jiraAccounts";
 
-export const generateAndSendReleaseNote = async () => {
+export const generateAndSendReleaseNote = async (sprintName?: string) => {
+  let allDevIssues: JiraIssue[] = [];
+  let allSupportIssues: JiraIssue[] = [];
+
   for (const account of jiraAccounts) {
     try {
-      const issues: JiraIssue[] = await getCurrentSprintIssues(account);
-      const summaries = issues.map(i => `- ${i.key}: ${i.fields.summary}`).join("\n");
+      const { sprint, issues } = await getSprintIssues(account, sprintName);
 
-      const aiContent = await generateTextWithAI(
-        `Generá una release note profesional para estas tareas:\n${summaries}`
-      );
+      const dev = issues.filter((i: JiraIssue) => i.key.startsWith("VAN-"));
+      const support = issues.filter((i: JiraIssue) => i.key.startsWith("VS-"));
 
-      const docBuffer = await createReleaseNoteDocx(aiContent);
-      await sendReleaseNoteEmail(docBuffer, `release-note-${account.name}.docx`, account.recipients);
-
-      console.log(`✔ Release Note enviado a ${account.name}`);
+      allDevIssues.push(...dev);
+      allSupportIssues.push(...support);
     } catch (error) {
       console.error(`✖ Error con ${account.name}:`, error);
     }
   }
+
+  if (allDevIssues.length === 0 && allSupportIssues.length === 0) {
+    console.warn("No se encontraron issues para el sprint");
+    return;
+  }
+
+  const finalSprintName = sprintName ?? "Sprint";
+  const fileName = `release-note-${finalSprintName}.docx`;
+  const filePath = path.join(__dirname, `../../output/${fileName}`);
+
+  fs.mkdirSync(path.join(__dirname, "../../output"), { recursive: true });
+
+  const docBuffer = await createReleaseNoteDocx(allDevIssues, allSupportIssues, finalSprintName);
+  fs.writeFileSync(filePath, docBuffer);
+
+  await sendReleaseNoteEmail(docBuffer, fileName, ["juanjo.curutchet78@gmail.com"]);
+
+  console.log(`Release Note generado y enviado.`);
+  console.log(`Guardado local: ${filePath}`);
 };

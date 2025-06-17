@@ -1,10 +1,26 @@
+import "dotenv/config";
+import { createBasicAuth } from "../utils/jiraAuth";
+
+const email = "juanjo.curutchet78@gmail.com";
+const token = process.env.JIRA_API_TOKEN_A;
+
+if (!token) {
+  throw new Error("Falta JIRA_API_TOKEN_A en el archivo .env");
+}
+
 export const jiraAccounts = [
   {
-    name: "CODEMIZED",
-    baseUrl: "https://codemized.atlassian.net/jira/projects?page=1&sortKey=name&sortOrder=ASC&types=software",
+    name: "DEVELOPMENT",
+    boardId: 1,
     email: "juanjo.curutchet78@gmail.com",
     apiToken: process.env.JIRA_API_TOKEN_A!,
-    boardId: 9,
-    recipients: ["juanjo.curutchet78@gmail.com"],
+    recipients: ["juanjo.curutchet78@gmail.com"]
   },
+  {
+    name: "SUPPORT",
+    boardId: 9,
+    email: "juanjo.curutchet78@gmail.com",
+    apiToken: process.env.JIRA_API_TOKEN_A!,
+    recipients: ["juanjo.curutchet78@gmail.com"]
+  }
 ];

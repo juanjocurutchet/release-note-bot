@@ -4,8 +4,7 @@ Este proyecto genera y envía automáticamente un documento `.docx` con el resum
 
 ## Scripts
 
-- `npx ts-node src/index.ts --manual --sprint="Sprint xxx"` → Ejecuta el flujo manualmente.
-- `npm start` → Inicia el cron para correr cada día a las 9:00.
+- `npm start` → Ejecuta Backend y Frontend en conjunto.
 
 ## Configuración
 

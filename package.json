@@ -3,19 +3,28 @@
   "version": "1.0.0",
   "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node src/index.ts",
-    "generate-release": "ts-node src/index.ts --manual"
+    "start": "concurrently \"npm run dev-server\" \"npm run start-client\"",
+    "generate-release": "ts-node src/index.ts --manual",
+    "start-server": "ts-node src/server.ts",
+    "dev-server": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
+    "start-client": "cd release-note-ui && npm start"
   },
   "dependencies": {
     "axios": "^1.6.0",
+    "cors": "^2.8.5",
     "docx": "^8.0.1",
     "dotenv": "^16.5.0",
+    "express": "^4.21.2",
     "node-cron": "^4.1.0",
     "nodemailer": "^6.9.1",
     "openai": "^4.0.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.23",
     "@types/nodemailer": "^6.4.17",
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.0.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4"
   }

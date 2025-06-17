@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./ReleaseNoteForm.css";
+import { JiraProject } from "./shared/jiraProjects";
 
 export default function ReleaseNoteForm() {
   const [devSprint, setDevSprint] = useState("");
   const [supportSprint, setSupportSprint] = useState("");
+  const [selectedProject, setSelectedProject] = useState<JiraProject>(JiraProject.VANZINI);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    document.title = "Generate Release";
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +19,14 @@ export default function ReleaseNoteForm() {
     try {
       const response = await fetch("http://localhost:4000/api/generate-release", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ devSprint, supportSprint }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          devSprint,
+          supportSprint,
+          projectName: selectedProject,
+        }),
       });
 
       if (!response.ok) throw new Error("Error al generar el release");
@@ -30,17 +34,28 @@ export default function ReleaseNoteForm() {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       setDownloadUrl(url);
-      setMessage("Release generado y enviado correctamente por email.");
+      setMessage("✅ Release generado y enviado correctamente por email.");
     } catch {
-      setMessage("Ocurrió un error al generar o enviar el release.");
+      setMessage("❌ Ocurrió un error al generar o enviar el release.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="form-wrapper">
-      <form onSubmit={handleSubmit} className="form-container">
+    <div className="release-note-container">
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Proyecto</label>
+          <select
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value as JiraProject)}
+          >
+            <option value={JiraProject.VANZINI}>Vanzini</option>
+            <option value={JiraProject.GENESIS}>Genesis</option>
+          </select>
+        </div>
+
         <div>
           <label>Sprint Desarrollo</label>
           <input
@@ -50,6 +65,7 @@ export default function ReleaseNoteForm() {
             required
           />
         </div>
+
         <div>
           <label>Sprint Soporte</label>
           <input
@@ -59,30 +75,33 @@ export default function ReleaseNoteForm() {
             required
           />
         </div>
+
         <button type="submit" disabled={loading}>
           {loading ? (
             <>
-              <span className="spinner"></span> Generando...
+              <span className="spinner" /> Generando...
             </>
           ) : (
             "Generar y Enviar"
           )}
         </button>
-
-        {message && (
-          <div className={message.includes("error") ? "error-message" : "success-message"}>
-            {message.includes("error") ? "❌" : "✅"} {message}
-          </div>
-        )}
-
-        {downloadUrl && (
-          <div className="download-link">
-            <a href={downloadUrl} download={`release-note-${devSprint}-${supportSprint}.docx`}>
-              Descargar Release Note
-            </a>
-          </div>
-        )}
       </form>
+
+      {message && (
+        <div className={message.includes("✅") ? "success-message" : "error-message"}>
+          {message}
+        </div>
+      )}
+
+      {downloadUrl && (
+        <a
+          href={downloadUrl}
+          download={`release-note-${devSprint}-${supportSprint}.docx`}
+          className="download-link"
+        >
+          Descargar Release Note
+        </a>
+      )}
     </div>
   );
 }

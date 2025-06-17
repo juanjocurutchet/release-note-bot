@@ -17,7 +17,8 @@ const buildIssueParagraph = (index: number, issue: JiraIssue) => {
 export const createReleaseNoteDocx = async (
   devIssues: JiraIssue[],
   supportIssues: JiraIssue[],
-  sprintName: string
+  sprintName: string,
+  projectDisplayName: string
 ): Promise<Buffer> => {
   const monthsEs = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -31,73 +32,80 @@ export const createReleaseNoteDocx = async (
 
   const darkGray = "4F4F4F";
 
+  const children = [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      children: [
+        new TextRun({
+          text: `Release Note - ${projectDisplayName} - ${mes} ${año}`,
+          font: "Arial",
+          size: 44,
+          bold: true,
+          color: darkGray,
+        }),
+      ],
+    }),
+    new Paragraph({
+      border: {
+        bottom: {
+          color: darkGray,
+          space: 1,
+          style: BorderStyle.SINGLE,
+          size: 6,
+        },
+      },
+      spacing: { after: 300 },
+    }),
+    new Paragraph({
+      spacing: { after: 300 },
+      children: [
+        new TextRun({
+          text: "Desarrollo:",
+          bold: true,
+          font: "Arial",
+          size: 32,
+          color: darkGray,
+        }),
+      ],
+    }),
+    ...devParagraphs
+  ];
+
+  if (supportIssues.length > 0) {
+    children.push(
+      new Paragraph({
+        spacing: { before: 400, after: 300 },
+        border: {
+          bottom: {
+            color: darkGray,
+            space: 1,
+            style: BorderStyle.SINGLE,
+            size: 6,
+          },
+        },
+      }),
+      new Paragraph({
+        spacing: { after: 300 },
+        children: [
+          new TextRun({
+            text: "Soporte:",
+            bold: true,
+            font: "Arial",
+            size: 32,
+            color: darkGray,
+          }),
+        ],
+      }),
+      ...supportParagraphs
+    );
+  }
+
   const doc = new Document({
     sections: [
       {
         properties: {},
-        children: [
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 },
-            children: [
-              new TextRun({
-                text: `Release Note - Vanzini - ${mes} ${año}`,
-                font: "Arial",
-                size: 44,
-                bold: true,
-                color: darkGray,
-              }),
-            ],
-          }),
-          new Paragraph({
-            border: {
-              bottom: {
-                color: darkGray,
-                space: 1,
-                style: BorderStyle.SINGLE,
-                size: 6,
-              },
-            },
-            spacing: { after: 300 },
-          }),
-          new Paragraph({
-            spacing: { after: 300 },
-            children: [
-              new TextRun({
-                text: "Desarrollo:",
-                bold: true,
-                font: "Arial",
-                size: 32,
-                color: darkGray,
-              }),
-            ],
-          }),
-          ...devParagraphs,
-          new Paragraph({
-            border: {
-              bottom: {
-                color: darkGray,
-                space: 1,
-                style: BorderStyle.SINGLE,
-                size: 6,
-              },
-            },
-            spacing: { before: 400, after: 300 },
-          }),
-          new Paragraph({
-            spacing: { after: 300 },
-            children: [
-              new TextRun({
-                text: "Soporte:",
-                bold: true,
-                font: "Arial",
-                size: 32,
-                color: darkGray,
-              }),
-            ],
-          }),
-          ...supportParagraphs,
-        ],
+        children
       },
     ],
   });

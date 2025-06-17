@@ -5,8 +5,9 @@ import fs from "fs";
 import path from "path";
 import { getSprintIssues } from "./services/jiraService";
 import { createReleaseNoteDocx } from "./services/docService";
-import { jiraAccounts } from "./config/jiraAccounts";
 import { sendReleaseNoteEmail } from "./services/emailService";
+import { jiraAccounts } from "./config/jiraAccounts";
+import { JiraProject } from "./config/jiraProjects";
 
 const app = express();
 const PORT = 4000;
@@ -17,33 +18,37 @@ app.use(express.json());
 interface GenerateReleaseBody {
   devSprint: string;
   supportSprint: string;
+  projectName: JiraProject;
 }
 
 app.post("/api/generate-release", async (req: Request<{}, {}, GenerateReleaseBody>, res: Response) => {
-  const { devSprint, supportSprint } = req.body;
-
+  const { devSprint, supportSprint, projectName } = req.body;
+  console.log("🟨 projectName recibido:", projectName);
   try {
-    const devAccount = jiraAccounts.find((acc) => acc.name.toUpperCase() === "DEVELOPMENT");
-    const supportAccount = jiraAccounts.find((acc) => acc.name.toUpperCase() === "SUPPORT");
-
-    if (!devAccount || !supportAccount) {
-      return res.status(400).json({ error: "Faltan cuentas de Jira configuradas" });
+    const jiraAccount = jiraAccounts.find(
+      (acc) => acc.name === projectName
+    );
+    console.log("🟩 Cuenta Jira encontrada:", jiraAccount?.name);
+    if (!jiraAccount) {
+      return res.status(400).json({ error: "Proyecto Jira no encontrado" });
     }
 
-    const devData = await getSprintIssues(devAccount, devSprint);
-    const supportData = await getSprintIssues(supportAccount, supportSprint);
+    const devData = await getSprintIssues(jiraAccount.dev, devSprint);
+    let supportData = { issues: [] };
 
-    const buffer = await createReleaseNoteDocx(devData.issues, supportData.issues, `${devSprint}`);
+    if (jiraAccount.support && supportSprint) {
+      supportData = await getSprintIssues(jiraAccount.support, supportSprint);
+    }
+
+    const buffer = await createReleaseNoteDocx(devData.issues, supportData.issues, devSprint, jiraAccount.name);
     const fileName = `release-note-${devSprint}-${supportSprint}.docx`;
     const filePath = path.join(__dirname, `../output/${fileName}`);
 
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, buffer);
-    await sendReleaseNoteEmail(
-      buffer,
-      fileName,
-      [...devAccount.recipients, ...supportAccount.recipients]
-    );
+
+    await sendReleaseNoteEmail(buffer, fileName, jiraAccount.recipients);
+
     res.set({
       "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "Content-Disposition": `attachment; filename="${fileName}"`,
@@ -51,7 +56,7 @@ app.post("/api/generate-release", async (req: Request<{}, {}, GenerateReleaseBod
 
     res.send(buffer);
   } catch (error) {
-    console.error(" Error al generar release:", error);
+    console.error("❌ Error al generar release:", error);
     res.status(500).json({ error: "Error al generar el release." });
   }
 });

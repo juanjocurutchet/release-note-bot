@@ -7,5 +7,6 @@
     "strict": true,
     "esModuleInterop": true
   },
-  "exclude": ["release-note-ui"]
+  "exclude": ["release-note-ui"],
+  "include": ["src", "release-note-ui/src/shared"]
 }

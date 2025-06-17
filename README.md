@@ -1,10 +1,10 @@
 # Release Note Generator
 
-Este proyecto genera y envía automáticamente un documento `.docx` con el resumen del sprint actual usando IA (GPT) y Jira.
+Este proyecto genera y envía automáticamente un documento `.docx` con el resumen del sprint actual usando Jira.
 
 ## Scripts
 
-- `npm run generate-release` → Ejecuta el flujo manualmente.
+- `npx ts-node src/index.ts --manual --sprint="Sprint xxx"` → Ejecuta el flujo manualmente.
 - `npm start` → Inicia el cron para correr cada día a las 9:00.
 
 ## Configuración
